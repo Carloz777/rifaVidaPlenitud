@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rifa Interactiva</title>
+    <script src="https://www.gstatic.com/firebasejs/9.19.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.0/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #004080;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #e0e0e0;
+            border: 1px solid #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .cell.selected {
+            background-color: #4caf50;
+            color: #fff;
+        }
+        input, select, button {
+            margin: 10px;
+            padding: 5px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rifa Interactiva</h1>
+    <p>Haz clic en un casillero para seleccionarlo:</p>
+
+    <div id="grid" class="grid"></div>
+
+    <div id="formulario" style="display:none;">
+        <h3>Detalles del participante</h3>
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" placeholder="Ingresa tu nombre" required><br>
+        <label for="telefono">Teléfono:</label>
+        <input type="text" id="telefono" placeholder="Ingresa tu teléfono" required><br>
+        <label for="opcion">Elige una opción:</label>
+        <select id="opcion">
+            <option value="opcion1">Opción 1</option>
+            <option value="opcion2">Opción 2</option>
+            <option value="opcion3">Opción 3</option>
+        </select><br>
+        <button onclick="guardarDatos()">Guardar</button>
+    </div>
+
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCi7Y91dkBwImhJZqAzQa_vGHK6mlHn_I8",
+            authDomain: "proyectorifa-5f07c.firebaseapp.com",
+            projectId: "proyectorifa-5f07c",
+            storageBucket: "proyectorifa-5f07c.firebasestorage.app",
+            messagingSenderId: "263593616608",
+            appId: "1:263593616608:web:864d05e1ae47db25d91c85"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Variables globales
+        const totalCasilleros = 100;
+        let casillerosSeleccionados = 0;
+        const maxSeleccionados = 40;
+
+        // Generar la grilla de números
+        const grid = document.getElementById("grid");
+        for (let i = 1; i <= totalCasilleros; i++) {
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.textContent = i;
+            cell.addEventListener("click", () => seleccionarCasillero(cell, i));
+            grid.appendChild(cell);
+        }
+
+        // Seleccionar casillero
+        function seleccionarCasillero(cell, numero) {
+            if (!cell.classList.contains("selected") && casillerosSeleccionados < maxSeleccionados) {
+                cell.classList.add("selected");
+                casillerosSeleccionados++;
+                mostrarFormulario(numero);
+            } else {
+                alert("Ya has seleccionado el máximo permitido o este casillero ya está marcado.");
+            }
+        }
+
+        // Mostrar formulario
+        function mostrarFormulario(numero) {
+            document.getElementById("formulario").style.display = "block";
+            document.getElementById("formulario").dataset.casillero = numero;
+        }
+
+        // Guardar datos en Firebase
+        async function guardarDatos() {
+            const nombre = document.getElementById("nombre").value;
+            const telefono = document.getElementById("telefono").value;
+            const opcion = document.getElementById("opcion").value;
+            const casillero = document.getElementById("formulario").dataset.casillero;
+
+            if (nombre && telefono) {
+                const referencia = database.ref('participantes/' + casillero); // Ruta en Firebase
+                referencia.set({
+                    nombre: nombre,
+                    telefono: telefono,
+                    opcion: opcion,
+                }).then(() => {
+                    alert(`Casillero ${casillero} asignado a:\nNombre: ${nombre}\nTeléfono: ${telefono}\nOpción: ${opcion}`);
+                    document.getElementById("formulario").style.display = "none";
+                    limpiarFormulario();
+                }).catch(error => {
+                    alert("Hubo un error al guardar los datos: " + error.message);
+                });
+            } else {
+                alert("Por favor completa todos los campos.");
+            }
+        }
+
+        // Limpiar formulario
+        function limpiarFormulario() {
+            document.getElementById("nombre").value = "";
+            document.getElementById("telefono").value = "";
+            document.getElementById("opcion").selectedIndex = 0;
+        }
+    </script>
+</body>
+</html>

@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rifa Interactiva</title>
-    <script src="https://www.gstatic.com/firebasejs/9.19.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.19.0/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -37,10 +35,24 @@
             background-color: #4caf50;
             color: #fff;
         }
+        .cell.occupied {
+            background-color: #ccc !important;
+            cursor: not-allowed;
+            color: #666;
+        }
         input, select, button {
             margin: 10px;
             padding: 5px;
             font-size: 1rem;
+        }
+        #formulario {
+            margin: 20px auto;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: left;
+            display: none;
         }
     </style>
 </head>
@@ -48,38 +60,33 @@
     <h1>Rifa Interactiva</h1>
     <p>Haz clic en un casillero para seleccionarlo:</p>
 
+    <!-- Contenedor de la grilla -->
     <div id="grid" class="grid"></div>
 
-    <div id="formulario" style="display:none;">
+    <!-- Formulario de datos -->
+    <div id="formulario">
         <h3>Detalles del participante</h3>
-        <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" placeholder="Ingresa tu nombre" required><br>
-        <label for="telefono">Teléfono:</label>
-        <input type="text" id="telefono" placeholder="Ingresa tu teléfono" required><br>
-        <label for="opcion">Elige una opción:</label>
-        <select id="opcion">
-            <option value="opcion1">Opción 1</option>
-            <option value="opcion2">Opción 2</option>
-            <option value="opcion3">Opción 3</option>
-        </select><br>
-        <button onclick="guardarDatos()">Guardar</button>
+        <form name="rifa" method="POST" data-netlify="true">
+            <input type="hidden" name="casillero" id="casillero-hidden" />
+            
+            <label for="nombre">Nombre:</label><br>
+            <input type="text" name="nombre" id="nombre" placeholder="Ingresa tu nombre" required><br>
+            
+            <label for="telefono">Teléfono:</label><br>
+            <input type="text" name="telefono" id="telefono" placeholder="Ingresa tu teléfono" required><br>
+            
+            <label for="opcion">Elige una opción:</label><br>
+            <select name="opcion" id="opcion">
+                <option value="opcion1">Opción 1</option>
+                <option value="opcion2">Opción 2</option>
+                <option value="opcion3">Opción 3</option>
+            </select><br><br>
+            
+            <button type="submit">Guardar</button>
+        </form>
     </div>
 
     <script>
-        // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCi7Y91dkBwImhJZqAzQa_vGHK6mlHn_I8",
-            authDomain: "proyectorifa-5f07c.firebaseapp.com",
-            projectId: "proyectorifa-5f07c",
-            storageBucket: "proyectorifa-5f07c.firebasestorage.app",
-            messagingSenderId: "263593616608",
-            appId: "1:263593616608:web:864d05e1ae47db25d91c85"
-        };
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = firebase.database();
-
         // Variables globales
         const totalCasilleros = 100;
         let casillerosSeleccionados = 0;
@@ -97,52 +104,70 @@
 
         // Seleccionar casillero
         function seleccionarCasillero(cell, numero) {
-            if (!cell.classList.contains("selected") && casillerosSeleccionados < maxSeleccionados) {
-                cell.classList.add("selected");
-                casillerosSeleccionados++;
-                mostrarFormulario(numero);
-            } else {
-                alert("Ya has seleccionado el máximo permitido o este casillero ya está marcado.");
+            if (cell.classList.contains("selected") || cell.classList.contains("occupied")) {
+                alert("Este casillero ya está asignado.");
+                return;
             }
+
+            if (casillerosSeleccionados >= maxSeleccionados) {
+                alert("Ya has seleccionado el máximo permitido (40 casilleros).");
+                return;
+            }
+
+            cell.classList.add("selected");
+            casillerosSeleccionados++;
+            mostrarFormulario(numero);
         }
 
-        // Mostrar formulario
+        // Mostrar formulario y asignar el número de casillero
         function mostrarFormulario(numero) {
+            document.getElementById("casillero-hidden").value = numero;
             document.getElementById("formulario").style.display = "block";
-            document.getElementById("formulario").dataset.casillero = numero;
         }
 
-        // Guardar datos en Firebase
-        async function guardarDatos() {
+        // Enviar datos al backend de Netlify (función)
+        document.getElementById("formulario").querySelector("form").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Evita recarga
+
             const nombre = document.getElementById("nombre").value;
             const telefono = document.getElementById("telefono").value;
             const opcion = document.getElementById("opcion").value;
-            const casillero = document.getElementById("formulario").dataset.casillero;
+            const casillero = document.getElementById("casillero-hidden").value;
 
-            if (nombre && telefono) {
-                const referencia = database.ref('participantes/' + casillero); // Ruta en Firebase
-                referencia.set({
-                    nombre: nombre,
-                    telefono: telefono,
-                    opcion: opcion,
-                }).then(() => {
-                    alert(`Casillero ${casillero} asignado a:\nNombre: ${nombre}\nTeléfono: ${telefono}\nOpción: ${opcion}`);
-                    document.getElementById("formulario").style.display = "none";
-                    limpiarFormulario();
-                }).catch(error => {
-                    alert("Hubo un error al guardar los datos: " + error.message);
-                });
-            } else {
+            if (!nombre || !telefono) {
                 alert("Por favor completa todos los campos.");
+                return;
             }
-        }
 
-        // Limpiar formulario
-        function limpiarFormulario() {
-            document.getElementById("nombre").value = "";
-            document.getElementById("telefono").value = "";
-            document.getElementById("opcion").selectedIndex = 0;
-        }
+            try {
+                const response = await fetch("/.netlify/functions/save-rifa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ casillero, nombre, telefono, opcion })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ Casillero ${casillero} asignado a:\n${nombre}\n${telefono}`);
+                    
+                    // Marcar como ocupado permanentemente
+                    const cell = document.querySelector(`.cell:nth-child(${casillero})`);
+                    if (cell) cell.classList.add("occupied");
+
+                    // Limpiar y ocultar
+                    document.getElementById("nombre").value = "";
+                    document.getElementById("telefono").value = "";
+                    document.getElementById("opcion").selectedIndex = 0;
+                    document.getElementById("formulario").style.display = "none";
+                } else {
+                    alert("❌ Error al guardar: " + result.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("❌ Hubo un error técnico. Por favor intenta más tarde.");
+            }
+        });
     </script>
 </body>
 </html>

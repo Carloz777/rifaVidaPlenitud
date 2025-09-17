@@ -68,21 +68,26 @@
         <h3>Detalles del participante</h3>
         <form name="rifa" method="POST" data-netlify="true">
             <input type="hidden" name="casillero" id="casillero-hidden" />
-            
+
             <label for="nombre">Nombre:</label><br>
             <input type="text" name="nombre" id="nombre" placeholder="Ingresa tu nombre" required><br>
-            
+
             <label for="telefono">Teléfono:</label><br>
             <input type="text" name="telefono" id="telefono" placeholder="Ingresa tu teléfono" required><br>
-            
+
             <label for="opcion">Elige una opción:</label><br>
             <select name="opcion" id="opcion">
                 <option value="opcion1">Opción 1</option>
                 <option value="opcion2">Opción 2</option>
                 <option value="opcion3">Opción 3</option>
             </select><br><br>
-            
-            <button type="submit">Guardar</button>
+
+            <!-- Campo de clave secreta -->
+            <div style="margin:15px 0; text-align:center;">
+                <input type="password" id="admin-password" placeholder="🔑 Ingresa clave para registrar venta" style="width:200px; padding:8px;">
+                <button type="button" onclick="validatePassword()">Registrar</button>
+            </div>
+
         </form>
     </div>
 
@@ -91,6 +96,9 @@
         const totalCasilleros = 100;
         let casillerosSeleccionados = 0;
         const maxSeleccionados = 40;
+
+        // Clave secreta para registrar ventas
+        const ADMIN_PASSWORD = "RifaIglesia2025!";
 
         // Generar la grilla de números
         const grid = document.getElementById("grid");
@@ -119,55 +127,21 @@
             mostrarFormulario(numero);
         }
 
-        // Mostrar formulario y asignar el número de casillero
+        // Mostrar formulario
         function mostrarFormulario(numero) {
             document.getElementById("casillero-hidden").value = numero;
             document.getElementById("formulario").style.display = "block";
         }
 
-        // Enviar datos al backend de Netlify (función)
-        document.getElementById("formulario").querySelector("form").addEventListener("submit", async function(event) {
-            event.preventDefault(); // Evita recarga
-
-            const nombre = document.getElementById("nombre").value;
-            const telefono = document.getElementById("telefono").value;
-            const opcion = document.getElementById("opcion").value;
-            const casillero = document.getElementById("casillero-hidden").value;
-
-            if (!nombre || !telefono) {
-                alert("Por favor completa todos los campos.");
-                return;
+        // Validar clave antes de guardar
+        function validatePassword() {
+            const password = document.getElementById("admin-password").value;
+            if (password === ADMIN_PASSWORD) {
+                document.querySelector("form[name='rifa']").submit();
+            } else {
+                alert("❌ Clave incorrecta. Solo el administrador puede registrar ventas.");
             }
-
-            try {
-                const response = await fetch("/.netlify/functions/save-rifa", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ casillero, nombre, telefono, opcion })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert(`✅ Casillero ${casillero} asignado a:\n${nombre}\n${telefono}`);
-                    
-                    // Marcar como ocupado permanentemente
-                    const cell = document.querySelector(`.cell:nth-child(${casillero})`);
-                    if (cell) cell.classList.add("occupied");
-
-                    // Limpiar y ocultar
-                    document.getElementById("nombre").value = "";
-                    document.getElementById("telefono").value = "";
-                    document.getElementById("opcion").selectedIndex = 0;
-                    document.getElementById("formulario").style.display = "none";
-                } else {
-                    alert("❌ Error al guardar: " + result.error);
-                }
-            } catch (error) {
-                console.error(error);
-                alert("❌ Hubo un error técnico. Por favor intenta más tarde.");
-            }
-        });
+        }
     </script>
 </body>
 </html>

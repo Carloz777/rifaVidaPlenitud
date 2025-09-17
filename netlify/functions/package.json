@@ -1,0 +1,15 @@
+{
+  "name": "rifa-iglesia",
+  "version": "1.0.0",
+  "description": "Rifa interactiva con Supabase y clave de acceso",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve"
+  },
+  "keywords": ["rifa", "netlify", "supabase"],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.44.0"
+  }
+}

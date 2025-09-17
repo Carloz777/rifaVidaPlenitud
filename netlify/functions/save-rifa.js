@@ -1,46 +1,48 @@
-// netlify/functions/save-rifa.js
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+
+// ✅ Tus datos de Supabase ya están aquí
+const supabaseUrl = 'https://qnwaeivskhavrenzqgqs.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFud2FlaXZza2hhdnJlbnpxZ3FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NjY2NjcsImV4cCI6MjA3MzU0MjY2N30.rmkWf-cai37YRu0eAGd_mmbrdKyQZxOsV8-QtC6iE5k';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   try {
-    // Parsear los datos enviados desde el frontend
     const body = JSON.parse(event.body);
     const { casillero, nombre, telefono, opcion } = body;
 
-    // Ruta al archivo JSON donde guardaremos todos los registros
-    const filePath = path.join(__dirname, '../../rifa.json');
+    // Insertar en Supabase
+    const { data, error } = await supabase
+      .from('rifa_participantes')
+      .insert([
+        {
+          casillero,
+          nombre,
+          telefono,
+          opcion,
+        },
+      ]);
 
-    // Leer el archivo existente (si existe)
-    let datos = [];
-    if (fs.existsSync(filePath)) {
-      const contenido = fs.readFileSync(filePath, 'utf8');
-      datos = JSON.parse(contenido);
-    }
-
-    // Agregar nuevo registro
-    datos.push({
-      casillero,
-      nombre,
-      telefono,
-      opcion,
-      fecha: new Date().toISOString()
-    });
-
-    // Escribir de nuevo el archivo
-    fs.writeFileSync(filePath, JSON.stringify(datos, null, 2));
+    if (error) throw error;
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ success: true, message: 'Guardado con éxito!' })
+      body: JSON.stringify({
+        success: true,
+        message: 'Guardado con éxito en Supabase!',
+        data,
+      }),
     };
   } catch (error) {
-    console.error(error);
+    console.error('Error:', error);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ success: false, error: error.message })
+      body: JSON.stringify({
+        success: false,
+        error: error.message || 'Error desconocido',
+      }),
     };
   }
 };

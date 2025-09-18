@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// ✅ Tus datos de Supabase ya están aquí
+// ✅ Tus datos de Supabase
 const supabaseUrl = 'https://qnwaeivskhavrenzqgqs.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFud2FlaXZza2hhdnJlbnpxZ3FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NjY2NjcsImV4cCI6MjA3MzU0MjY2N30.rmkWf-cai37YRu0eAGd_mmbrdKyQZxOsV8-QtC6iE5k';
 

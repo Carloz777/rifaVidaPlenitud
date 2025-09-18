@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  command = "echo 'No build needed'"
+
+[functions]
+  directory = "netlify/functions"
+
+[[plugins]]
+  package = "@netlify/plugin-functions-core"

@@ -66,7 +66,7 @@
     <!-- Formulario de datos -->
     <div id="formulario">
         <h3>Detalles del participante</h3>
-        <form name="rifa" method="POST" data-netlify="true">
+        <form id="rifa-form">
             <input type="hidden" name="casillero" id="casillero-hidden" />
 
             <label for="nombre">Nombre:</label><br>
@@ -87,7 +87,6 @@
                 <input type="password" id="admin-password" placeholder="🔑 Ingresa clave para registrar venta" style="width:200px; padding:8px;">
                 <button type="button" onclick="validatePassword()">Registrar</button>
             </div>
-
         </form>
     </div>
 
@@ -137,7 +136,29 @@
         function validatePassword() {
             const password = document.getElementById("admin-password").value;
             if (password === ADMIN_PASSWORD) {
-                document.querySelector("form[name='rifa']").submit();
+                const data = {
+                    casillero: document.getElementById("casillero-hidden").value,
+                    nombre: document.getElementById("nombre").value,
+                    telefono: document.getElementById("telefono").value,
+                    opcion: document.getElementById("opcion").value,
+                };
+
+                fetch("/.netlify/functions/save-rifa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        alert("✅ Guardado con éxito!");
+                    } else {
+                        alert("❌ Error: " + res.error);
+                    }
+                })
+                .catch(err => {
+                    alert("❌ Error en la conexión: " + err.message);
+                });
             } else {
                 alert("❌ Clave incorrecta. Solo el administrador puede registrar ventas.");
             }

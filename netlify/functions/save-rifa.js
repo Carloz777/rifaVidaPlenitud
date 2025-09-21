@@ -1,14 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// ✅ Configuración de Supabase (⚠️ Lo ideal es mover estas claves a variables de entorno en Netlify)
-const supabaseUrl = 'https://qnwaeivskhavrenzqgqs.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFud2FlaXZza2hhdnJlbnpxZ3FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NjY2NjcsImV4cCI6MjA3MzU0MjY2N30.rmkWf-cai37YRu0eAGd_mmbrdKyQZxOsV8-QtC6iE5k';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 exports.handler = async (event, context) => {
   try {
-    // Validar método HTTP
+    // 1. Validar método HTTP
     if (event.httpMethod !== "POST") {
       return {
         statusCode: 405,
@@ -17,25 +11,55 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Parsear body
-    const body = JSON.parse(event.body);
-    const { casillero, nombre, telefono, opcion } = body;
-
-    if (!casillero || !nombre || !telefono) {
+    // 2. Parsear body
+    let body;
+    try {
+      body = JSON.parse(event.body);
+    } catch (e) {
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ success: false, error: "Faltan datos obligatorios" }),
+        body: JSON.stringify({ success: false, error: "JSON inválido" }),
       };
     }
 
-    // Insertar en Supabase
+    const { casillero, nombre, telefono, opcion } = body;
+
+    // 3. Validar campos obligatorios (ajusta según tu tabla)
+    if (!casillero || !nombre || !telefono || !opcion) {
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ success: false, error: "Faltan datos obligatorios: casillero, nombre, telefono, opcion" }),
+      };
+    }
+
+    // 4. Configurar Supabase con variables de entorno (¡IMPORTANTE!)
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // ⚠️ Usa SERVICE_ROLE, no anon
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("❌ Variables de entorno no configuradas");
+      return {
+        statusCode: 500,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ success: false, error: "Error de configuración del servidor" }),
+      };
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 5. Insertar en Supabase
     const { data, error } = await supabase
       .from("rifa_participantes")
       .insert([{ casillero, nombre, telefono, opcion }]);
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ Error de Supabase:", error);
+      throw new Error(`Supabase error: ${error.message}`);
+    }
 
+    // 6. Respuesta exitosa
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
@@ -45,14 +69,15 @@ exports.handler = async (event, context) => {
         data,
       }),
     };
+
   } catch (error) {
-    console.error("Error en función save-rifa:", error);
+    console.error("🔥 Error en función save-rifa:", error.message || error);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         success: false,
-        error: error.message || "Error desconocido",
+        error: error.message || "Error desconocido en el servidor",
       }),
     };
   }
